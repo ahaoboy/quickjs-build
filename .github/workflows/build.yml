@@ -1,0 +1,82 @@
+name: build
+
+permissions:
+  contents: write
+
+on:
+  push:
+    tags:
+      - "v*"
+    branches:
+      - "main"
+  pull_request:
+
+defaults:
+  run:
+    shell: bash --noprofile --norc -CeEuo pipefail {0}
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-apple-darwin
+            os: macos-13
+          - target: aarch64-apple-darwin
+            os: macos-latest
+          # - target: x86_64-pc-windows-msvc
+          #   os: windows-latest
+          # - target: x86_64-pc-windows-gnu
+          #   os: windows-latest
+          # - target: arm64ec-pc-windows-msvc
+          #   os: windows-latest
+          # - target: aarch64-unknown-linux-musl
+          #   os: ubuntu-latest
+          # - target: aarch64-unknown-linux-gnu
+          #   os: ubuntu-latest
+          # - target: x86_64-unknown-linux-musl
+          #   os: ubuntu-latest
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    name: build-${{ matrix.target }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: build-${{ matrix.target }}
+        if: matrix.os != 'windows-latest'
+        shell: "bash"
+        run: |
+          git clone https://github.com/bellard/quickjs.git quickjs --depth=1
+          cd quickjs
+          make
+
+          mkdir ../dist
+
+          cp -r ./build/*qjs* ../dist
+
+          cd ..
+          tar -czf ./qjs-${{ matrix.target }}.tar.gz -C ./dist .
+          ls -l ./qjs-${{ matrix.target }}.tar.gz
+
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: qjs-${{ matrix.target }}
+          path: ./qjs-${{ matrix.target }}.tar.gz
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: qjs
+          pattern: qjs*
+          merge-multiple: true
+
+      - name: release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "qjs/*.tar.gz"
