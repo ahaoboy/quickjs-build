@@ -52,7 +52,9 @@ jobs:
 
           mkdir ../dist
 
-          cp -r ./build/*qjs* ../dist
+          cp ./qjs ../dist/qjs
+          cp ./qjsc ../dist/qjsc
+          cp ./libquickjs* ../dist
 
           cd ..
           tar -czf ./qjs-${{ matrix.target }}.tar.gz -C ./dist .
