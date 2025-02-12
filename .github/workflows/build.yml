@@ -3,6 +3,9 @@ name: build
 permissions:
   contents: write
 
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 on:
   push:
     tags:
@@ -24,18 +27,6 @@ jobs:
             os: macos-13
           - target: aarch64-apple-darwin
             os: macos-latest
-          # - target: x86_64-pc-windows-msvc
-          #   os: windows-latest
-          # - target: x86_64-pc-windows-gnu
-          #   os: windows-latest
-          # - target: arm64ec-pc-windows-msvc
-          #   os: windows-latest
-          # - target: aarch64-unknown-linux-musl
-          #   os: ubuntu-latest
-          # - target: aarch64-unknown-linux-gnu
-          #   os: ubuntu-latest
-          # - target: x86_64-unknown-linux-musl
-          #   os: ubuntu-latest
           - target: x86_64-unknown-linux-gnu
             os: ubuntu-latest
     runs-on: ${{ matrix.os }}
@@ -52,8 +43,7 @@ jobs:
 
           mkdir ../dist
 
-          cp ./qjs ../dist/qjs
-          cp ./qjsc ../dist/qjsc
+          cp ./qjs* ../dist
           cp ./libquickjs* ../dist
 
           cd ..
@@ -82,3 +72,28 @@ jobs:
         uses: ncipollo/release-action@v1
         with:
           artifacts: "qjs/*.tar.gz"
+  release-test:
+    needs: release
+    if: startsWith(github.ref, 'refs/tags/')
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-apple-darwin
+            os: macos-13
+          - target: aarch64-apple-darwin
+            os: macos-14
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    name: test-build-${{ matrix.target }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: install easy-install
+        uses: ahaoboy/easy-setup@v1
+        with:
+          url: https://github.com/ahaoboy/quickjs-build
+      - name: test
+        run: |
+          which qjs
+          echo "console.log(1+1)" > a.js
+          qjs a.js
