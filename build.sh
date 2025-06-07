@@ -21,6 +21,10 @@ cp -r ./libquickjs* ../dist
 
 cd ..
 
+if [[ "$TARGET" == "x86_64-pc-windows-gnu" ]]; then
+  ldd ./dist/qjs | grep -vi '=> /c/Windows/.*' | awk '{print $3}' | xargs -I '{}' cp -v '{}' ./dist
+fi
+
 ls -lh dist
 
 tar -czf ./qjs-${TARGET}.tar.gz -C dist .
