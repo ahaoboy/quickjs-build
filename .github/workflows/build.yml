@@ -3,9 +3,6 @@ name: build
 permissions:
   contents: write
 
-env:
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
 on:
   push:
     tags:
@@ -26,29 +23,43 @@ jobs:
           - target: x86_64-apple-darwin
             os: macos-13
           - target: aarch64-apple-darwin
-            os: macos-latest
+            os: macos-14
+          - target: x86_64-pc-windows-gnu
+            os: windows-latest
           - target: x86_64-unknown-linux-gnu
-            os: ubuntu-latest
+            os: ubuntu-24.04
     runs-on: ${{ matrix.os }}
     name: build-${{ matrix.target }}
     steps:
       - uses: actions/checkout@v4
+      - uses: msys2/setup-msys2@v2
+        if: matrix.os == 'windows-latest'
+        with:
+          msystem: MINGW64
+          update: true
+          path-type: inherit
+          install: >-
+            mingw-w64-x86_64-make
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-clang
+            mingw-w64-x86_64-perl
+            mingw-w64-x86_64-python3
+            zip
+            unzip
+            curl
+            wget
       - name: build-${{ matrix.target }}
         if: matrix.os != 'windows-latest'
         shell: "bash"
         run: |
-          git clone https://github.com/bellard/quickjs.git quickjs --depth=1
-          cd quickjs
-          make
+          bash build.sh ${{ matrix.target }}
 
-          mkdir ../dist
-
-          cp ./qjs* ../dist
-          cp ./libquickjs* ../dist
-
-          cd ..
-          tar -czf ./qjs-${{ matrix.target }}.tar.gz -C ./dist .
-          ls -l ./qjs-${{ matrix.target }}.tar.gz
+      - name: build-windows
+        if: matrix.os == 'windows-latest'
+        shell: msys2 {0}
+        run: |
+          bash build.sh ${{ matrix.target }}
 
       - name: Upload
         uses: actions/upload-artifact@v4
@@ -72,28 +83,20 @@ jobs:
         uses: ncipollo/release-action@v1
         with:
           artifacts: "qjs/*.tar.gz"
-  release-test:
-    needs: release
+  post-test:
+    needs: ["release"]
     if: startsWith(github.ref, 'refs/tags/')
     strategy:
       matrix:
-        include:
-          - target: x86_64-apple-darwin
-            os: macos-13
-          - target: aarch64-apple-darwin
-            os: macos-14
-          - target: x86_64-unknown-linux-gnu
-            os: ubuntu-latest
+        os: [ubuntu-24.04, windows-latest, macos-14, macos-13]
     runs-on: ${{ matrix.os }}
-    name: test-build-${{ matrix.target }}
     steps:
       - uses: actions/checkout@v4
-      - name: install easy-install
-        uses: ahaoboy/easy-setup@v1
+      - uses: easy-install/easy-setup@v1
         with:
           url: https://github.com/ahaoboy/quickjs-build
       - name: test
         run: |
           which qjs
-          echo "console.log(1+1)" > a.js
-          qjs a.js
+          echo "console.log(1+1)" >> ./test.js
+          qjs ./test.js
