@@ -28,4 +28,4 @@ ls -l ./qjs-${TARGET}.tar.gz
 
 
 echo "console.log(1+1)" >> ./test.js
-./qjs ./test.js
+./dist/qjs ./test.js
