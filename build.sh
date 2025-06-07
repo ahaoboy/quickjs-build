@@ -12,6 +12,8 @@ cd quickjs
 
 make
 
+mkdir ../dist
+
 cp ./qjs ../dist/qjs
 cp ./qjsc ../dist/qjsc
 cp ./qjsc ../dist/qjsc
