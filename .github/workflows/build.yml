@@ -23,8 +23,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - target: x86_64-apple-darwin
-            os: macos-13
           - target: aarch64-apple-darwin
             os: macos-14
           - target: x86_64-pc-windows-gnu
@@ -71,7 +69,7 @@ jobs:
           path: ./qjs-${{ matrix.target }}.tar.gz
   release:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - name: Download All Artifacts
