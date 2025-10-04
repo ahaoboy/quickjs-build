@@ -14,8 +14,17 @@ make
 
 mkdir ../dist
 
+PERM_MODE="/111"
+case "$(uname)" in
+  Darwin)
+    PERM_MODE="-111"
+    ;;
+esac
+
+# strip qjs qjsc
+find . -maxdepth 1 -type f -name 'qjs*' -perm "$PERM_MODE" -print -exec strip {} \;
+
 cp ./qjs ../dist/qjs
-cp ./qjsc ../dist/qjsc
 cp ./qjsc ../dist/qjsc
 cp -r ./libquickjs* ../dist
 
