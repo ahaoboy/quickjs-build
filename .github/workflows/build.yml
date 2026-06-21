@@ -80,6 +80,25 @@ jobs:
           pattern: qjs*
           merge-multiple: true
 
+      - name: Update readme
+        run: |
+          # Read the old first line and wrap it in an HTML comment
+          OLD_FIRST_LINE=$(head -n 1 readme.md)
+          echo "<!-- ${OLD_FIRST_LINE} -->" > readme_new.md
+          # Add current time as the new first line
+          echo "$(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> readme_new.md
+          # Append the rest of the original readme (skip old first line)
+          tail -n +2 readme.md >> readme_new.md
+          mv readme_new.md readme.md
+          cat readme.md
+
+      - name: Commit and push readme
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add readme.md
+          git diff --cached --quiet || (git commit -m "chore: update readme with build time" && git push)
+
       - name: release
         uses: ncipollo/release-action@v1
         with:
