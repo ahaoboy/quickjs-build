@@ -1,4 +1,4 @@
-<!-- 2026-08-14 02:07:38 UTC -->
+<!-- 2026-08-15 01:22:34 UTC -->
 
 https://github.com/bellard/quickjs
 
